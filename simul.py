@@ -17,8 +17,11 @@ class Simul:
         self.L = L
 
     def wall_time(self):
-        first_collision_time = np.inf
-        particle = np.inf
+        positive_time = (self.L-self.sigma-self.position)/self.velocity
+        neg_time = (self.sigma-self.position)/self.velocity
+        collision_time = np.where(self.velocity > 0, positive_time, neg_time)
+        first_collision_time = np.min(collision_time)
+        particle = int(np.where(collision_time == first_collision_time)[0]) #First index
         direction = np.inf
         return first_collision_time, particle, direction
         # calculate time of first collision, particle involved and direction
