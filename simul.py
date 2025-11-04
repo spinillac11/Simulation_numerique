@@ -19,7 +19,7 @@ class Simul:
     def wall_time(self):
         positive_time = (self.L-self.sigma-self.position)/self.velocity
         neg_time = (self.sigma-self.position)/self.velocity
-        collision_time = np.where(self.velocity > 0, positive_time, neg_time)
+        collision_time = np.where(self.velocity >= 0, positive_time, neg_time)
 
         first_collision_time = np.min(collision_time)
         where = np.where(collision_time == first_collision_time)
@@ -40,13 +40,12 @@ class Simul:
         
         w_time, particle, direction = self.wall_time()
 
-        condition_on_time_variables = current_time + w_time < self.simul_time
-
-        while condition_on_time_variables:   # think about this
+        while current_time + w_time < self.simul_time:   # think about this
             self.position += (current_time + w_time) * self.velocity
             self.velocity[particle, direction] = -self.velocity[particle, direction]
-            w_time, particle, direction = self.wall_time()  # update collisions times
             current_time += w_time
+            w_time, particle, direction = self.wall_time()  # update collisions times
+            
 
         # adapt the position update  as a function of your logic
         self.position += (self.simul_time-current_time) * self.velocity
