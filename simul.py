@@ -50,7 +50,7 @@ class Simul:
             current_time += w_time
 
         # adapt the position update  as a function of your logic
-        
+        self.position += self.simul_time * self.velocity
 
         assert math.isclose(ke_start,  (self.velocity**2).sum()/2.)  # check that we conserve energy after all the collisions
 
