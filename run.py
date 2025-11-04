@@ -2,7 +2,6 @@ from simul import Simul
 from animate import Animate
 import numpy as np
 
-
 def main():
     np.random.seed(1)  # set random numbers to be always the same
     simulation = Simul(simul_time=0.006, sigma=1., L=7)  # sigma particle radius # L box size

@@ -20,9 +20,10 @@ class Simul:
         positive_time = (self.L-self.sigma-self.position)/self.velocity
         neg_time = (self.sigma-self.position)/self.velocity
         collision_time = np.where(self.velocity > 0, positive_time, neg_time)
+
         first_collision_time = np.min(collision_time)
-        particle = int(np.where(collision_time == first_collision_time)[0]) #First index
-        direction = np.inf
+        particle = np.where(collision_time == first_collision_time)[0][0] #First index par
+        direction = np.where(collision_time == first_collision_time)[1][0] #Second index dir
         return first_collision_time, particle, direction
         # calculate time of first collision, particle involved and direction
 
@@ -35,17 +36,21 @@ class Simul:
 
         pressure = -1
         current_time = 0
-        condition_on_time_variables = False
-
+        
         w_time, particle, direction = self.wall_time()
 
+        current_time += w_time
+
+        condition_on_time_variables = current_time < self.simul_time
+
         while condition_on_time_variables:   # think about this
-            # do something
+            self.position += current_time * self.velocity
+            self.velocity[particle][direction] = -self.velocity[particle][direction]
             w_time, particle, direction = self.wall_time()  # update collisions times
-            # update current_time
+            current_time += w_time
 
         # adapt the position update  as a function of your logic
-        self.position += self.simul_time * self.velocity
+        
 
         assert math.isclose(ke_start,  (self.velocity**2).sum()/2.)  # check that we conserve energy after all the collisions
 
