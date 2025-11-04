@@ -22,8 +22,9 @@ class Simul:
         collision_time = np.where(self.velocity > 0, positive_time, neg_time)
 
         first_collision_time = np.min(collision_time)
-        particle = np.where(collision_time == first_collision_time)[0][0] #First index par
-        direction = np.where(collision_time == first_collision_time)[1][0] #Second index dir
+        where = np.where(collision_time == first_collision_time)
+        particle = where[0][0] #First index par
+        direction = where[1][0] #Second index dir
         return first_collision_time, particle, direction
         # calculate time of first collision, particle involved and direction
 
@@ -42,10 +43,10 @@ class Simul:
         condition_on_time_variables = current_time + w_time < self.simul_time
 
         while condition_on_time_variables:   # think about this
-            current_time += w_time
-            self.position += current_time * self.velocity
-            self.velocity[particle,direction] = -self.velocity[particle, direction]
+            self.position += (current_time + w_time) * self.velocity
+            self.velocity[particle, direction] = -self.velocity[particle, direction]
             w_time, particle, direction = self.wall_time()  # update collisions times
+            current_time += w_time
 
         # adapt the position update  as a function of your logic
         self.position += (self.simul_time-current_time) * self.velocity
