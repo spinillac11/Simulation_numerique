@@ -39,15 +39,13 @@ class Simul:
         
         w_time, particle, direction = self.wall_time()
 
-        current_time += w_time
-
-        condition_on_time_variables = current_time < self.simul_time
+        condition_on_time_variables = current_time + w_time < self.simul_time
 
         while condition_on_time_variables:   # think about this
+            current_time += w_time
             self.position += current_time * self.velocity
             self.velocity[particle,direction] = -self.velocity[particle, direction]
             w_time, particle, direction = self.wall_time()  # update collisions times
-            current_time += w_time
 
         # adapt the position update  as a function of your logic
         self.position += (self.simul_time-current_time) * self.velocity
