@@ -7,15 +7,35 @@ class Simul:
     This is the prototype of the simulation code
     It moves the particles with at _velocity, using a vector notation: numpy should be used.
     """
-    def __init__(self, simul_time, sigma, L):
+    def __init__(self, simul_time, sigma, L, N):
         np.seterr(all='ignore')  # remove errors in where statements
         self.sigma = sigma  # particle radius
-        N = 20  
-        self.position = 6*np.random.rand(N, 2) + self.sigma # starting positions
-        self.velocity = 2*np.random.normal(size=self.position.shape)  # random velocities
-        self.l, self.m = np.triu_indices(self.position.shape[0], k=1)  # all pairs of indices between particles
+        self.N = N   
         self.simul_time = simul_time
         self.L = L
+
+        self.position = (self.L-2*self.sigma)*np.random.rand(self.N, 2) + self.sigma # starting positions
+        self.velocity = 2*np.random.normal(size=self.position.shape)  # random velocities
+        self.l, self.m = np.triu_indices(self.position.shape[0], k=1)  # all pairs of indices between particles
+
+        delta_r = self.position[self.m] - self.position[self.l]
+        abs_r = np.sqrt(np.sum(delta_r * delta_r, axis = 1))
+        count = 0
+
+        while np.min(abs_r) < 2*self.sigma:
+            self.position = (self.L-2*self.sigma)*np.random.rand(self.N, 2) + self.sigma
+            delta_r = self.position[self.m] - self.position[self.l]
+            abs_r = np.sqrt(np.sum(delta_r * delta_r, axis = 1))
+            count += 1 
+            if count > 100000:
+                raise ValueError("To many particles for this sigma")
+            
+        
+        
+
+    #def init_pos(self):
+        
+
 
     def wall_time(self):
         positive_time = (self.L-self.sigma-self.position)/self.velocity
