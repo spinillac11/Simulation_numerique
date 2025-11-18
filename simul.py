@@ -29,14 +29,9 @@ class Simul:
             count += 1 
             if count > 100000:
                 raise ValueError("To many particles for this sigma")
-            
-        
-        
 
     #def init_pos(self):
         
-
-
     def wall_time(self):
         positive_time = (self.L-self.sigma-self.position)/self.velocity
         neg_time = (self.sigma-self.position)/self.velocity
@@ -72,10 +67,10 @@ class Simul:
         return first_collision_time, self.l[idx], self.m[idx]
     
     def md_step(self):
-        print('Simul::md_step')
+        #print('Simul::md_step')
         ke_start = (self.velocity**2).sum()/2.   # starting kinetic energy
 
-        pressure = -1
+        pressure = 0
         current_time = 0
         
         w_time, particle, direction = self.wall_time()
@@ -86,15 +81,16 @@ class Simul:
         while current_time + time_min < self.simul_time:
 
             if w_time < p_time:
-                self.position += (current_time + w_time) * self.velocity
+                self.position += w_time * self.velocity
                 self.velocity[particle, direction] = -self.velocity[particle, direction]
                 current_time += w_time
                 w_time, particle, direction = self.wall_time()
                 p_time, particle_1, particle_2 = self.pair_time()
                 time_min = min(w_time, p_time)
-            
+                pressure += 2*np.abs(self.velocity[particle, direction])
+    
             else:
-                self.position += (current_time + p_time) * self.velocity
+                self.position += p_time * self.velocity
                 dR = self.position[particle_1]-self.position[particle_2]
                 r = (self.position[particle_1]-self.position[particle_2])/np.sqrt(np.sum(dR*dR))
                 dV = self.velocity[particle_1] - self.velocity[particle_2]
@@ -110,7 +106,8 @@ class Simul:
 
         assert math.isclose(ke_start,  (self.velocity**2).sum()/2.)  # check that we conserve energy after all the collisions
 
-        return pressure
+        #print(pressure/(4*self.L*self.simul_time))
+        return pressure/(4*self.L*self.simul_time), ke_start
 
     def __str__(self):   # this is used to print the position and velocity of the particles
         p = np.array2string(self.position)
