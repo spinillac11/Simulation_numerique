@@ -8,7 +8,7 @@ def main():
     P_list=[]
     K_list=[]
     np.random.seed()  # set random numbers to be always the same
-    simulation = Simul(simul_time=0.006, sigma_min=0.1, sigma_max=0.1, L=10, N=100) 
+    simulation = Simul(simul_time=0.006, sigma_min=0.1, sigma_max=0.2, L=10, N=100) 
     print(simulation.__doc__)  # print the documentation from the class
     
     pressure = 0
