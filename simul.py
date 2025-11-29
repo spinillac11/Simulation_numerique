@@ -7,14 +7,17 @@ class Simul:
     This is the prototype of the simulation code
     It moves the particles with at _velocity, using a vector notation: numpy should be used.
     """
-    def __init__(self, simul_time, sigma, L, N):
+    def __init__(self, simul_time, sigma_min, sigma_max, L, N):
         np.seterr(all='ignore')  # remove errors in where statements
-        self.sigma = sigma  # particle radius
         self.N = N   
+        self.sigma = self.sigma = np.random.uniform(sigma_min, sigma_max, size=self.N)  # particles random radius
         self.simul_time = simul_time
         self.L = L
 
-        self.position = (self.L-2*self.sigma)*np.random.rand(self.N, 2) + self.sigma # starting positions
+        self.position = np.random.rand(self.N, 2)
+        self.position[:,0] = self.position[:,0]*(self.L - 2*self.sigma) + self.sigma # starting x positions
+        self.position[:,1] = self.position[:,1]*(self.L - 2*self.sigma) + self.sigma # starting y positions
+
         self.velocity = 2*np.random.normal(size=self.position.shape)  # random velocities
         self.l, self.m = np.triu_indices(self.position.shape[0], k=1)  # all pairs of indices between particles
 
@@ -22,19 +25,19 @@ class Simul:
         abs_r = np.sqrt(np.sum(delta_r * delta_r, axis = 1))
         count = 0
 
-        while np.min(abs_r) < 2*self.sigma:
-            self.position = (self.L-2*self.sigma)*np.random.rand(self.N, 2) + self.sigma
-            delta_r = self.position[self.m] - self.position[self.l]
-            abs_r = np.sqrt(np.sum(delta_r * delta_r, axis = 1))
-            count += 1 
-            if count > 100000:
-                raise ValueError("To many particles for this sigma")
+        # while np.min(abs_r) < 2*self.sigma:
+        #     self.position = (self.L-2*self.sigma)*np.random.rand(self.N, 2) + self.sigma
+        #     delta_r = self.position[self.m] - self.position[self.l]
+        #     abs_r = np.sqrt(np.sum(delta_r * delta_r, axis = 1))
+        #     count += 1 
+        #     if count > 100000:
+        #         raise ValueError("To many particles for this sigma")
 
     #def init_pos(self):
         
     def wall_time(self):
-        positive_time = (self.L-self.sigma-self.position)/self.velocity
-        neg_time = (self.sigma-self.position)/self.velocity
+        positive_time = (self.L-self.sigma[:, None]-self.position)/self.velocity
+        neg_time = (self.sigma[:, None]-self.position)/self.velocity
         collision_time = np.where(self.velocity >= 0, positive_time, neg_time)
 
         first_collision_time = np.min(collision_time)
@@ -51,7 +54,7 @@ class Simul:
 
         A = np.sum(delta_v * delta_v, axis=1)
         B = 2 * np.sum(delta_v * delta_r, axis=1)
-        C = np.sum(delta_r * delta_r, axis=1) - (2 * self.sigma)**2
+        C = np.sum(delta_r * delta_r, axis=1) - (self.sigma[self.l] + self.sigma[self.m])**2
 
         Delta = B**2-4*A*C
         valid = (Delta > 0) & (B < 0)
@@ -106,7 +109,6 @@ class Simul:
 
         assert math.isclose(ke_start,  (self.velocity**2).sum()/2.)  # check that we conserve energy after all the collisions
 
-        #print(pressure/(4*self.L*self.simul_time))
         return pressure/(4*self.L*self.simul_time), ke_start
 
     def __str__(self):   # this is used to print the position and velocity of the particles

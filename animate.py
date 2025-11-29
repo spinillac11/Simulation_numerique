@@ -32,6 +32,8 @@ class Animate:
 
         self.simul.md_step()  # perform simulation step
         self.circles.set_offsets(self.simul.position)  # update positions on screen
+        self.circles.set_widths(2*self.simul.sigma) # keep radii updated    
+        self.circles.set_heights(2*self.simul.sigma)
 
     def go(self, nframes):
         self._ani = animation.FuncAnimation(self.fig, func=self.anim_step, frames=nframes,
