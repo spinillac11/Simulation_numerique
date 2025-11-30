@@ -81,7 +81,7 @@ def main():
         plt.ylabel("Presure")
         plt.title("Ideal Gas: P vs V")
         plt.grid()
-        plt.savefig("")
+        plt.savefig("P_vs_1/L.png")
 
     if variable == "N":
         N_vals = np.array(values)
@@ -91,7 +91,7 @@ def main():
         plt.ylabel("Presure")
         plt.title("Ideal Gas: P vs N")
         plt.grid()
-        plt.show()
+        plt.savefig("P_vs_N.png")
 
     if variable == "K":
         plt.figure()
@@ -100,7 +100,7 @@ def main():
         plt.ylabel("Presure")
         plt.title("Ideal Gas: P vs K")
         plt.grid()
-        plt.show()
+        plt.savefig("P_vs_K.png")
 
 if __name__ == "__main__":
     main()
