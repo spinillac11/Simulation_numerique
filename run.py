@@ -2,17 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from simul import Simul
 
-# -------------------------------
-# Utility functions
-# -------------------------------
-
-def pressure_vs_N(L, sigma_min, sigma_max, simul_time, Ns, steps, K_scale):
+def pressure_vs_N(L, sigma, simul_time, Ns, steps, K_scale):
     Pressures = []
     Energies = []
     bs = []
 
     for N in Ns:
-        sim = Simul(simul_time=simul_time, sigma_min=sigma_min, sigma_max=sigma_max, L=L, N=N, K_scale=K_scale)
+        sim = Simul(simul_time=simul_time, sigma = sigma, L=L, N=N, K_scale=K_scale)
 
         b = np.pi * np.mean(sim.sigma ** 2)
         bs.append(b)
@@ -61,7 +57,6 @@ def main():
     print("2) Van der Waals Test (large particles)")
 
     choice = input("Enter 1, or 2: ")
-    #choice2 = input("Enter 1, 2, or 3:")
 
     L = 10
     simul_time = 0.5
@@ -71,20 +66,19 @@ def main():
     
     if choice == "1":
         print("\nRunning Ideal Gas Test...")
-        P, Ec, b = pressure_vs_N(L=L, sigma_min=0.01, sigma_max=0.01, simul_time=simul_time, Ns=Ns, steps=steps, K_scale=K_scale)
+        P, Ec, b = pressure_vs_N(L=L, sigma=0.01, simul_time=simul_time, Ns=Ns, steps=steps, K_scale=K_scale)
         V = L * L
         plot_ideal_gas(P, Ec, V, Ns)
 
     elif choice == "2":
         print("\nRunning Van der Waals Test...")
-        P, Ec, b = pressure_vs_N(L=L, sigma_min=0.2, sigma_max=0.2, simul_time=simul_time, Ns=Ns, steps=steps, K_scale=K_scale)
+        P, Ec, b = pressure_vs_N(L=L, sigma=0.08, simul_time=simul_time, Ns=Ns, steps=steps, K_scale=K_scale)
         V = L * L
         plot_van_der_waals(P, Ec, V, Ns, b)
 
     else:
         print("Invalid option.")
         return
-
 
 if __name__ == "__main__":
     main()
