@@ -40,7 +40,7 @@ def pressure_vs_N_and_b(sigmas, N_values, L, simul_time, K_scale, replicas):
                 resultados_b[sigma].append(np.nan)
             else:
                 V = L * L
-                b = (V / N) - (Ec_avg / P_avg)
+                b = (V / N) - (Ec_avg / (N*P_avg))
                 resultados_b[sigma].append(b)
 
     return resultados_P, resultados_b
@@ -77,7 +77,7 @@ def pressure_vs_L_and_b(sigmas, L_values, N, simul_time, K_scale, replicas):
                 resultados_b[sigma].append(np.nan)
             else:
                 V = L * L
-                b = (V / N) - (Ec_avg / P_avg)
+                b = (V / N) - (Ec_avg / (N*P_avg))
                 resultados_b[sigma].append(b)
 
     return resultados_P, resultados_b
@@ -104,7 +104,7 @@ def plot_b_vs_L(sigmas, L_values, resultados_b):
     for sigma in sigmas:
         bvals = np.array(resultados_b[sigma])
         valid = ~np.isnan(bvals)
-        plt.plot(np.array(L_values)[valid], bvals[valid], "-o", label=f"sigma={sigma}")
+        plt.plot(np.array(L_values)[valid]**2, bvals[valid], "-o", label=f"sigma={sigma}")
 
     plt.xlabel("L")
     plt.ylabel("b (excluded volume parameter)")
@@ -158,12 +158,12 @@ def main():
     N_values = list(range(10, 160, 10))
     L_values = [4, 5, 6, 8, 10, 12, 15]
 
-    # --- P vs N + b vs N ---
-    P_N, b_N = pressure_vs_N_and_b(sigmas, N_values, L=10, simul_time=simul_time,
-                                   K_scale=K_scale, replicas=replicas)
+    # # --- P vs N + b vs N ---
+    # P_N, b_N = pressure_vs_N_and_b(sigmas, N_values, L=10, simul_time=simul_time,
+    #                                K_scale=K_scale, replicas=replicas)
 
-    plot_b_vs_N(sigmas, N_values, b_N)
-    plot_pressure_vs_N(sigmas, N_values, P_N)
+    # plot_b_vs_N(sigmas, N_values, b_N)
+    # plot_pressure_vs_N(sigmas, N_values, P_N)
 
     # --- P vs L + b vs L ---
     P_L, b_L = pressure_vs_L_and_b(sigmas, L_values, N=40, simul_time=simul_time,
