@@ -3,104 +3,176 @@ import matplotlib.pyplot as plt
 from simul import Simul
 
 
-def run_experiment(variable, values, sigma, simul_time, steps):
-    Pressures = []
-    Energies = []
+def pressure_vs_N_and_b(sigmas, N_values, L, simul_time, K_scale, replicas):
+    """
+    Devuelve:
+    resultados_P[sigma] = [P(N1), P(N2)...]
+    resultados_b[sigma] = [b(N1), b(N2)...]
+    """
+    resultados_P = {sigma: [] for sigma in sigmas}
+    resultados_b = {sigma: [] for sigma in sigmas}
 
-    for val in values:
+    for sigma in sigmas:
+        for N in N_values:
 
-        # Default parameters
-        N = 60
-        L = 10
-        K_scale = 1.0
+            pres = []
+            ecs = []
 
-        # Modify depending on what we vary
-        if variable == "N":
-            N = val
-        elif variable == "L":
-            L = val
-        elif variable == "K":
-            K_scale = val
+            for _ in range(replicas):
+                try:
+                    sim = Simul(simul_time=simul_time, sigma=sigma, L=L, N=N, K_scale=K_scale)
+                except ValueError:
+                    pres.append(np.nan)
+                    ecs.append(np.nan)
+                    continue
 
-        simulation = Simul(simul_time=simul_time,sigma=sigma, L=L, N=N, K_scale=K_scale)
+                P, Ec = sim.md_step()
+                pres.append(P)
+                ecs.append(Ec)
 
-        P_accum = 0
-        E_accum = 0
+            P_avg = np.nanmean(pres)
+            Ec_avg = np.nanmean(ecs)
 
-        for _ in range(steps):
-            p, k = simulation.md_step()
-            P_accum += p
-            E_accum += k
+            resultados_P[sigma].append(P_avg)
 
-        Pressures.append(P_accum / steps)
-        Energies.append(E_accum / steps)
+            # Calcular b solo si P es válido
+            if np.isnan(P_avg) or P_avg == 0:
+                resultados_b[sigma].append(np.nan)
+            else:
+                V = L * L
+                b = (V / N) - (Ec_avg / P_avg)
+                resultados_b[sigma].append(b)
 
-    return np.array(Pressures), np.array(Energies)
+    return resultados_P, resultados_b
 
+def pressure_vs_L_and_b(sigmas, L_values, N, simul_time, K_scale, replicas):
 
+    resultados_P = {sigma: [] for sigma in sigmas}
+    resultados_b = {sigma: [] for sigma in sigmas}
+
+    for sigma in sigmas:
+        for L in L_values:
+
+            pres = []
+            ecs = []
+
+            for _ in range(replicas):
+                try:
+                    sim = Simul(simul_time=simul_time, sigma=sigma, L=L, N=N, K_scale=K_scale)
+                except ValueError:
+                    pres.append(np.nan)
+                    ecs.append(np.nan)
+                    continue
+
+                P, Ec = sim.md_step()
+                pres.append(P)
+                ecs.append(Ec)
+
+            P_avg = np.nanmean(pres)
+            Ec_avg = np.nanmean(ecs)
+
+            resultados_P[sigma].append(P_avg)
+
+            if np.isnan(P_avg) or P_avg == 0:
+                resultados_b[sigma].append(np.nan)
+            else:
+                V = L * L
+                b = (V / N) - (Ec_avg / P_avg)
+                resultados_b[sigma].append(b)
+
+    return resultados_P, resultados_b
+
+def plot_b_vs_N(sigmas, N_values, resultados_b):
+    plt.figure(figsize=(10, 6))
+
+    for sigma in sigmas:
+        bvals = np.array(resultados_b[sigma])
+        valid = ~np.isnan(bvals)
+        plt.plot(np.array(N_values)[valid], bvals[valid], "-o", label=f"sigma={sigma}")
+
+    plt.xlabel("N")
+    plt.ylabel("b (excluded volume parameter)")
+    plt.title("b vs N for different σ")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.show() 
+
+def plot_b_vs_L(sigmas, L_values, resultados_b):
+    plt.figure(figsize=(10, 6))
+
+    for sigma in sigmas:
+        bvals = np.array(resultados_b[sigma])
+        valid = ~np.isnan(bvals)
+        plt.plot(np.array(L_values)[valid], bvals[valid], "-o", label=f"sigma={sigma}")
+
+    plt.xlabel("L")
+    plt.ylabel("b (excluded volume parameter)")
+    plt.title("b vs L for different σ")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_pressure_vs_L(sigmas, L_values, resultados):
+    plt.figure(figsize=(10, 6))
+
+    for sigma in sigmas:
+        data = np.array(resultados[sigma])
+        valid = ~np.isnan(data)
+
+        plt.plot(1/(np.array(L_values)[valid]**2), data[valid], "-o", label=f"sigma = {sigma}")
+
+    plt.xlabel("Box size L")
+    plt.ylabel("Pressure P")
+    plt.title("Pressure vs L for different σ")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_pressure_vs_N(sigmas, N_values, resultados):
+
+    plt.figure(figsize=(10, 6))
+
+    for sigma in sigmas:
+        data = np.array(resultados[sigma])
+        valid = ~np.isnan(data)
+
+        plt.plot(np.array(N_values)[valid], data[valid], "-o", label=f"sigma={sigma}")
+
+    plt.xlabel("Number of particles N")
+    plt.ylabel("Pressure P")
+    plt.title("Pressure vs N for different σ")
+    plt.grid()
+    plt.legend()
+    plt.show()
 
 def main():
 
-    print("\nSelect what variable to vary:")
-    print("1) Number of particles N")
-    print("2) Box size L")
-    print("3) Initial kinetic energy scale K")
-
-    var_choice = input("Enter 1, 2, or 3: ").strip()
-
-    if var_choice == "1":
-        variable = "N"
-        values = [10, 20, 40, 60, 80, 100, 120, 150]
-    elif var_choice == "2":
-        variable = "L"
-        values = [6, 8, 10, 12, 14, 16]
-    elif var_choice == "3":
-        variable = "K"
-        values = [0.5, 1.0, 2.0, 3.0]
-    else:
-        print("Invalid option.")
-        return
-    
-    N = 60
-    L = 10
+    simul_time = 5.0
     K_scale = 1.0
+    replicas = 2
 
-    simul_time = 0.2
-    steps = 300
+    sigmas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    N_values = list(range(10, 160, 10))
+    L_values = [4, 5, 6, 8, 10, 12, 15]
 
-    sigma = 0.8
+    # --- P vs N + b vs N ---
+    P_N, b_N = pressure_vs_N_and_b(sigmas, N_values, L=10, simul_time=simul_time,
+                                   K_scale=K_scale, replicas=replicas)
 
-    P, Ec = run_experiment(variable, values, sigma, simul_time, steps)
+    plot_b_vs_N(sigmas, N_values, b_N)
+    plot_pressure_vs_N(sigmas, N_values, P_N)
 
+    # --- P vs L + b vs L ---
+    P_L, b_L = pressure_vs_L_and_b(sigmas, L_values, N=40, simul_time=simul_time,
+                                   K_scale=K_scale, replicas=replicas)
 
-    if variable == "L":
-        Ls = np.array(values)
-        plt.figure()
-        plt.plot(1/ (Ls * Ls), P, marker='o')
-        plt.xlabel("Volume")
-        plt.ylabel("Presure")
-        plt.title("Ideal Gas: P vs V")
-        plt.grid()
-        plt.savefig("P_vs_1/L.png")
-
-    if variable == "N":
-        N_vals = np.array(values)
-        plt.figure()
-        plt.plot(N_vals, P, marker='o')
-        plt.xlabel("N particles")
-        plt.ylabel("Presure")
-        plt.title("Ideal Gas: P vs N")
-        plt.grid()
-        plt.savefig("P_vs_N.png")
-
-    if variable == "K":
-        plt.figure()
-        plt.plot(Ec, P, marker='o')
-        plt.xlabel("Kinetic Energy")
-        plt.ylabel("Presure")
-        plt.title("Ideal Gas: P vs K")
-        plt.grid()
-        plt.savefig("P_vs_K.png")
+    plot_b_vs_L(sigmas, L_values, b_L)
+    plot_pressure_vs_L(sigmas, L_values, P_L)
+    
 
 if __name__ == "__main__":
     main()
+
