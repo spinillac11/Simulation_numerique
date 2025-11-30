@@ -2,83 +2,105 @@ import numpy as np
 import matplotlib.pyplot as plt
 from simul import Simul
 
-def pressure_vs_N(L, sigma, simul_time, Ns, steps, K_scale):
+
+def run_experiment(variable, values, sigma, simul_time, steps):
     Pressures = []
     Energies = []
-    bs = []
 
-    for N in Ns:
-        sim = Simul(simul_time=simul_time, sigma = sigma, L=L, N=N, K_scale=K_scale)
+    for val in values:
 
-        b = np.pi * np.mean(sim.sigma ** 2)
-        bs.append(b)
+        # Default parameters
+        N = 60
+        L = 10
+        K_scale = 1.0
+
+        # Modify depending on what we vary
+        if variable == "N":
+            N = val
+        elif variable == "L":
+            L = val
+        elif variable == "K":
+            K_scale = val
+
+        simulation = Simul(simul_time=simul_time,sigma=sigma, L=L, N=N, K_scale=K_scale)
 
         P_accum = 0
         E_accum = 0
 
         for _ in range(steps):
-            p, k = sim.md_step()
+            p, k = simulation.md_step()
             P_accum += p
             E_accum += k
 
         Pressures.append(P_accum / steps)
         Energies.append(E_accum / steps)
 
-    return np.array(Pressures), np.array(Energies), np.array(bs)
+    return np.array(Pressures), np.array(Energies)
 
-
-def plot_ideal_gas(P, Ec, V, Ns):
-    ratio = P * V / Ec
-    plt.figure()
-    plt.plot(Ns, ratio, marker='o')
-    plt.xlabel("Number of particles N")
-    plt.ylabel("PV / Ec")
-    plt.title("Ideal Gas Test: PV/Ec = constant?")
-    plt.grid()
-    plt.show()
-
-
-def plot_van_der_waals(P, Ec, V, Ns, b):
-    Ns = np.array(Ns)       
-    b = np.array(b)
-    ratio = P * (V - Ns * b) / Ec
-    plt.figure()
-    plt.plot(Ns, ratio, marker='o')
-    plt.xlabel("Number of particles N")
-    plt.ylabel("P (V/N - b) / Ec")
-    plt.title("Van der Waals Test: P(V/N-b)/Ec = constant?")
-    plt.grid()
-    plt.show()
 
 
 def main():
-    print("Select a simulation to run:")
-    print("1) Ideal Gas Test (very small particles)")
-    print("2) Van der Waals Test (large particles)")
 
-    choice = input("Enter 1, or 2: ")
+    print("\nSelect what variable to vary:")
+    print("1) Number of particles N")
+    print("2) Box size L")
+    print("3) Initial kinetic energy scale K")
 
-    L = 10
-    simul_time = 0.5
-    Ns = [4, 8, 10, 12, 20, 30, 40, 50, 60, 80, 100, 120, 140, 160]
-    steps = 200
-    K_scale = 2
-    
-    if choice == "1":
-        print("\nRunning Ideal Gas Test...")
-        P, Ec, b = pressure_vs_N(L=L, sigma=0.01, simul_time=simul_time, Ns=Ns, steps=steps, K_scale=K_scale)
-        V = L * L
-        plot_ideal_gas(P, Ec, V, Ns)
+    var_choice = input("Enter 1, 2, or 3: ").strip()
 
-    elif choice == "2":
-        print("\nRunning Van der Waals Test...")
-        P, Ec, b = pressure_vs_N(L=L, sigma=0.08, simul_time=simul_time, Ns=Ns, steps=steps, K_scale=K_scale)
-        V = L * L
-        plot_van_der_waals(P, Ec, V, Ns, b)
-
+    if var_choice == "1":
+        variable = "N"
+        values = [10, 20, 40, 60, 80, 100, 120, 150]
+    elif var_choice == "2":
+        variable = "L"
+        values = [6, 8, 10, 12, 14, 16]
+    elif var_choice == "3":
+        variable = "K"
+        values = [0.5, 1.0, 2.0, 3.0]
     else:
         print("Invalid option.")
         return
+    
+    N = 60
+    L = 10
+    K_scale = 1.0
+
+    simul_time = 0.2
+    steps = 300
+
+    sigma = 0.8
+
+    P, Ec = run_experiment(variable, values, sigma, simul_time, steps)
+
+
+    if variable == "L":
+        Ls = np.array(values)
+        plt.figure()
+        plt.plot(1/ (Ls * Ls), P, marker='o')
+        plt.xlabel("Volume")
+        plt.ylabel("Presure")
+        plt.title("Ideal Gas: P vs V")
+        plt.grid()
+        plt.savefig("")
+
+    if variable == "N":
+        N_vals = np.array(values)
+        plt.figure()
+        plt.plot(N_vals, P, marker='o')
+        plt.xlabel("N particles")
+        plt.ylabel("Presure")
+        plt.title("Ideal Gas: P vs N")
+        plt.grid()
+        plt.show()
+
+    if variable == "K":
+        plt.figure()
+        plt.plot(Ec, P, marker='o')
+        plt.xlabel("Kinetic Energy")
+        plt.ylabel("Presure")
+        plt.title("Ideal Gas: P vs K")
+        plt.grid()
+        plt.show()
 
 if __name__ == "__main__":
     main()
