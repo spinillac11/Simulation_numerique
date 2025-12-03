@@ -2,9 +2,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 from simul import Simul
 
+def execute_simulation(sigma, L, N, K_scale, simul_time, replicas):
+    pres = []
+    ke = []
+    for _ in range(replicas):
+        try:
+            sim = Simul(simul_time=simul_time, sigma=sigma, L=L, N=N, K_scale=K_scale)
+        except ValueError:
+            pres.append(np.nan)
+            ke.append(np.nan)
+            continue
+
+        P, Ec = sim.md_step()
+        pres.append(P)
+        ke.append(Ec)
+    
+    P_avg = np.nanmean(pres)
+    ke_avg = np.nanmean(ke)
+
+    return P_avg, ke_avg
+
 # Experimental functions to compute Pressure and b factor
 def pressure_vs_N(sigmas, N_values, L, simul_time, K_scale, replicas):
     Pressure = {sigma: [] for sigma in sigmas}
+    Energy = {sigma: [] for sigma in sigmas}
     b_factor = {sigma: [] for sigma in sigmas}
 
     for sigma in sigmas:
@@ -29,6 +50,7 @@ def pressure_vs_N(sigmas, N_values, L, simul_time, K_scale, replicas):
             ke_avg = np.nanmean(ke)
 
             Pressure[sigma].append(P_avg)
+            Energy[sigma].append(ke_avg)
 
             if np.isnan(P_avg) or P_avg == 0:
                 b_factor[sigma].append(np.nan)
@@ -42,30 +64,16 @@ def pressure_vs_N(sigmas, N_values, L, simul_time, K_scale, replicas):
 
 def pressure_vs_L(sigmas, L_values, N, simul_time, K_scale, replicas):
     Pressure = {sigma: [] for sigma in sigmas}
+    Energy = {sigma: [] for sigma in sigmas}
     b_factor = {sigma: [] for sigma in sigmas}
 
     for sigma in sigmas:
         for L in L_values:
-
-            pres = []
-            ke = []
-
-            for _ in range(replicas):
-                try:
-                    sim = Simul(simul_time=simul_time, sigma=sigma, L=L, N=N, K_scale=K_scale)
-                except ValueError:
-                    pres.append(np.nan)
-                    ke.append(np.nan)
-                    continue
-
-                P, Ec = sim.md_step()
-                pres.append(P)
-                ke.append(Ec)
-
-            P_avg = np.nanmean(pres)
-            ke_avg = np.nanmean(ke)
+            
+            P_avg, ke_avg = execute_simulation(sigma, L, N, K_scale, simul_time, replicas)
 
             Pressure[sigma].append(P_avg)
+            Energy[sigma].append(ke_avg)
 
             if np.isnan(P_avg) or P_avg == 0:
                 b_factor[sigma].append(np.nan)
@@ -192,7 +200,7 @@ def plot_pressure_vs_N(sigmas, N_values, results):
     for sigma in sigmas:
         data = np.array(results[sigma])
         valid = ~np.isnan(data)
-        plt.plot(N_values, data[valid], "-o", label=f"sigma={sigma}")
+        plt.plot(np.array(N_values)[valid], data[valid], "-o", label=f"sigma={sigma}")
 
     plt.xlabel("Number of particles N")
     plt.ylabel("Pressure P")
@@ -219,8 +227,6 @@ def plot_pressure_vs_K(sigmas, K, results):
     plt.legend()
     plt.show()
 
-
-
 #  MAIN MENU
 
 def main():
@@ -229,7 +235,7 @@ def main():
     K_scale = 1.0
     replicas = 10
 
-    # Define parameter ranges
+    # Define parameter ranges for experiments
     sigmas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     N_values = list(range(10, 160, 10))
     L_values = [4, 5, 6, 8, 10, 12, 15]
