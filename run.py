@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from simul import Simul
+from scipy.stats import linregress
 
 def execute_simulation(sigma, L, N, K_scale, simul_time, replicas):
     pres = []
@@ -31,23 +32,7 @@ def pressure_vs_N(sigmas, N_values, L, simul_time, K_scale, replicas):
     for sigma in sigmas:
         for N in N_values:
 
-            pres = []
-            ke = []
-
-            for _ in range(replicas):
-                try:
-                    sim = Simul(simul_time=simul_time, sigma=sigma, L=L, N=N, K_scale=K_scale)
-                except ValueError:
-                    pres.append(np.nan)
-                    ke.append(np.nan)
-                    continue
-
-                P, Ec = sim.md_step()
-                pres.append(P)
-                ke.append(Ec)
-
-            P_avg = np.nanmean(pres)
-            ke_avg = np.nanmean(ke)
+            P_avg, ke_avg = execute_simulation(sigma, L, N, K_scale, simul_time, replicas)
 
             Pressure[sigma].append(P_avg)
             Energy[sigma].append(ke_avg)
@@ -59,7 +44,7 @@ def pressure_vs_N(sigmas, N_values, L, simul_time, K_scale, replicas):
                 b = (V / N) - (ke_avg / (N * P_avg))
                 b_factor[sigma].append(b)
 
-    return Pressure, b_factor
+    return Pressure, b_factor, Energy
 
 
 def pressure_vs_L(sigmas, L_values, N, simul_time, K_scale, replicas):
@@ -82,7 +67,7 @@ def pressure_vs_L(sigmas, L_values, N, simul_time, K_scale, replicas):
                 b = (V / N) - (ke_avg / (N * P_avg))
                 b_factor[sigma].append(b)
 
-    return Pressure, b_factor
+    return Pressure, b_factor, Energy
 
 
 def pressure_vs_K(sigmas, L, N, simul_time, K_values, replicas):
@@ -93,23 +78,7 @@ def pressure_vs_K(sigmas, L, N, simul_time, K_values, replicas):
     for sigma in sigmas:
         for K_scale in K_values:
 
-            pres = []
-            ke = []
-
-            for _ in range(replicas):
-                try:
-                    sim = Simul(simul_time=simul_time, sigma=sigma, L=L, N=N, K_scale=K_scale)
-                except ValueError:
-                    pres.append(np.nan)
-                    ke.append(np.nan)
-                    continue
-
-                P, Ec = sim.md_step()
-                pres.append(P)
-                ke.append(Ec)
-
-            P_avg = np.nanmean(pres)
-            ke_avg = np.nanmean(ke)
+            P_avg, ke_avg = execute_simulation(sigma, L, N, K_scale, simul_time, replicas)
 
             Pressure[sigma].append(P_avg)
             Energy[sigma].append(ke_avg)
@@ -135,7 +104,7 @@ def plot_b_vs_N(sigmas, N_values, b_factor):
 
     plt.xlabel("1/N")
     plt.ylabel("b (excluded volume parameter)")
-    plt.title("b vs N for different σ")
+    plt.title("b vs N for different σ (L = 10, K_scale = 1)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
@@ -152,88 +121,115 @@ def plot_b_vs_V(sigmas, L_values, b_factor):
 
     plt.xlabel("V = L²")
     plt.ylabel("b (excluded volume parameter)")
-    plt.title("b vs V for different σ")
+    plt.title("b vs V for different σ (N = 40, K_scale = 1)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
     plt.show()
 
-def plot_b_vs_K(sigmas, K, b_factor):
+def plot_b_vs_K(sigmas, K, b_factor, b_regression):
     plt.figure(figsize=(10, 6))
 
     for sigma in sigmas:
         bvals = np.array(b_factor[sigma])
-        valid = ~np.isnan(bvals)
         K_data = np.array(K[sigma])
-        validk = ~np.isnan(K_data)
-        plt.plot(np.array(K_data)[validk], bvals[valid], "-o", label=f"sigma={sigma}")
+        valid = (~np.isnan(bvals)) & (~np.isnan(K_data))
 
-    plt.xlabel("K scale")
+        plt.plot(K_data[valid], bvals[valid], "-o", label=f"sigma={sigma} data")
+
+        if sigma in b_regression:
+            b_reg, m, r = b_regression[sigma]
+            plt.hlines(b_reg, xmin=np.nanmin(K_data[valid]), xmax=np.nanmax(K_data[valid]), 
+                       linestyles="--", label=f"sigma={sigma} regression b={b_reg:.3f}")
+
+    plt.xlabel("Kinnetic energy K")
     plt.ylabel("b (excluded volume parameter)")
-    plt.title("b vs K for different σ")
+    plt.title("b vs K for different σ (N = 40, L = 10)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
     plt.show()
 
 
-def plot_pressure_vs_V(sigmas, L_values, results):
+def plot_pressure_vs_V(sigmas, L_values, P_results):
     plt.figure(figsize=(10, 6))
 
     for sigma in sigmas:
-        data = np.array(results[sigma])
+        data = np.array(P_results[sigma])
         valid = ~np.isnan(data)
         plt.plot(1 / (np.array(L_values)[valid]**2), data[valid], "-o", label=f"sigma={sigma}")
 
     plt.xlabel("1/V")
     plt.ylabel("Pressure P")
-    plt.title("Pressure vs 1/V for different σ")
+    plt.title("Pressure vs 1/V for different σ (N = 40, K_scale = 1)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
     plt.show()
 
 
-def plot_pressure_vs_N(sigmas, N_values, results):
+def plot_pressure_vs_N(sigmas, N_values, P_results):
     plt.figure(figsize=(10, 6))
 
     for sigma in sigmas:
-        data = np.array(results[sigma])
+        data = np.array(P_results[sigma])
         valid = ~np.isnan(data)
         plt.plot(np.array(N_values)[valid], data[valid], "-o", label=f"sigma={sigma}")
 
     plt.xlabel("Number of particles N")
     plt.ylabel("Pressure P")
-    plt.title("Pressure vs N for different σ")
+    plt.title("Pressure vs N for different σ (L = 10, K_scale = 1)")
     plt.grid(True)
     plt.legend()
     plt.show()
 
 
-def plot_pressure_vs_K(sigmas, K, results):
+def plot_pressure_vs_K(sigmas, K, P_results, N, L):
+
     plt.figure(figsize=(10, 6))
 
+    b_regression = {}
+    V = L * L
+
+    print("linear regression results for P vs K:")
     for sigma in sigmas:
-        data = np.array(results[sigma])
+        data = np.array(P_results[sigma])
         valid = ~np.isnan(data)
         K_data = np.array(K[sigma])
         validk = ~np.isnan(K_data)
+
+        if np.sum(valid & validk) > 1:
+            slope, intercept, r_value, p_value, std_err = linregress(K_data[validk], data[valid])
+            if slope is not None:
+                b_reg = (V / N) - (1 / (slope * N))
+            else:
+                b_reg = np.nan
+
+            b_regression[sigma] = (b_reg, slope, r_value**2)
+            print(f"sigma={sigma}: slope={slope}, intercept={intercept}, R²={r_value**2}")
+
         plt.plot(K_data[validk], data[valid], "-o", label=f"sigma={sigma}")
 
-    plt.xlabel("K scale")
+    plt.xlabel("Kinnetic energy K")
     plt.ylabel("Pressure P")
-    plt.title("Pressure vs K for different σ")
+    plt.title("Pressure vs K for different σ (N = 40, L = 10)")
     plt.grid(True)
     plt.legend()
     plt.show()
+
+    return b_regression
 
 #  MAIN MENU
 
 def main():
 
     simul_time = 10.0
-    K_scale = 1.0
     replicas = 10
+
+    # Fixed parameters
+    L = 10
+    N = 40
+    K_scale = 1.0
 
     # Define parameter ranges for experiments
     sigmas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -249,19 +245,19 @@ def main():
     choice = input("Enter your choice: ")
 
     if choice == "1":
-        P, b = pressure_vs_N(sigmas, N_values, L=10, simul_time=simul_time, K_scale=K_scale, replicas=replicas)
+        P, b, E = pressure_vs_N(sigmas, N_values, L=L, simul_time=simul_time, K_scale=K_scale, replicas=replicas)
         plot_pressure_vs_N(sigmas, N_values, P)
         plot_b_vs_N(sigmas, N_values, b)
 
     elif choice == "2":
-        P, b = pressure_vs_L(sigmas, L_values, N=40, simul_time=simul_time, K_scale=K_scale, replicas=replicas)
+        P, b, E = pressure_vs_L(sigmas, L_values, N=N, simul_time=simul_time, K_scale=K_scale, replicas=replicas)
         plot_pressure_vs_V(sigmas, L_values, P)
         plot_b_vs_V(sigmas, L_values, b)
 
     elif choice == "3":
-        P, b, E = pressure_vs_K(sigmas, L=10, N=40, simul_time=simul_time, K_values=K_values, replicas=replicas)
-        plot_pressure_vs_K(sigmas, E, P)
-        plot_b_vs_K(sigmas, E, b)
+        P, b, E = pressure_vs_K(sigmas, L=L, N=N, simul_time=simul_time, K_values=K_values, replicas=replicas)
+        b_reg = plot_pressure_vs_K(sigmas, E, P, N, L)
+        plot_b_vs_K(sigmas, E, b, b_reg)
 
     else:
         print("Invalid option. Exiting.")
