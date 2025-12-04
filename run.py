@@ -7,12 +7,12 @@ import os
 os.makedirs("figures", exist_ok=True)
 
 def execute_simulation(sigma, L, N, K_scale, simul_time, replicas):
-    pres = []
-    ke = []
+    pres = [] # to store pressure results per replica
+    ke = [] # to store kinetic energy results per replica
     for _ in range(replicas):
         try:
             sim = Simul(simul_time=simul_time, sigma=sigma, L=L, N=N, K_scale=K_scale)
-        except ValueError:
+        except ValueError: # Not enough space to place particles without overlap
             pres.append(np.nan)
             ke.append(np.nan)
             continue
@@ -40,7 +40,7 @@ def pressure_vs_N(sigmas, N_values, L, simul_time, K_scale, replicas):
             Pressure[sigma].append(P_avg)
             Energy[sigma].append(ke_avg)
 
-            if np.isnan(P_avg) or P_avg == 0:
+            if np.isnan(P_avg) or P_avg == 0: # to avoid division by zero
                 b_factor[sigma].append(np.nan)
             else:
                 V = L * L
@@ -64,7 +64,7 @@ def pressure_vs_L(sigmas, L_values, N, simul_time, K_scale, replicas):
             Energy[sigma].append(ke_avg)
 
             if np.isnan(P_avg) or P_avg == 0:
-                b_factor[sigma].append(np.nan)
+                b_factor[sigma].append(np.nan) # to avoid division by zero
             else:
                 V = L * L
                 b = (V / N) - (ke_avg / (N * P_avg))
@@ -87,8 +87,8 @@ def pressure_vs_K(sigmas, L, N, simul_time, K_values, replicas):
             Energy[sigma].append(ke_avg)
 
             if np.isnan(P_avg) or P_avg == 0:
-                b_factor[sigma].append(np.nan)
-            else:
+                b_factor[sigma].append(np.nan) # to avoid division by zero
+            else: 
                 V = L * L
                 b = (V / N) - (ke_avg / (N * P_avg))
                 b_factor[sigma].append(b)
@@ -228,12 +228,12 @@ def plot_pressure_vs_K(sigmas, K, P_results, N, L):
     plt.savefig("figures/pressure_vs_K.png", dpi=300)
     plt.show()
 
-    return b_regression
+    return b_regression # return regression results for b factor in b vs K plot
 
 #  MAIN MENU
 
 def main():
-
+    # Simul time and replicas to get averages
     simul_time = 10
     replicas = 10
 
@@ -248,6 +248,7 @@ def main():
     L_values = [4, 5, 6, 8, 10, 12, 15]
     K_values = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
 
+    # User menu for selecting experiment
     print("\n Selecto parameter to vary:")
     print("1) N particles experiment")
     print("2) Box volume experiment")
@@ -255,16 +256,17 @@ def main():
   
     choice = input("Enter your choice: ")
 
+    # Pressure vs N experiment
     if choice == "1":
         P, b, E = pressure_vs_N(sigmas, N_values, L=L, simul_time=simul_time, K_scale=K_scale, replicas=replicas)
         plot_pressure_vs_N(sigmas, N_values, P)
         plot_b_vs_N(sigmas, N_values, b)
-
+    # Pressure vs L experiment
     elif choice == "2":
         P, b, E = pressure_vs_L(sigmas, L_values, N=N, simul_time=simul_time, K_scale=K_scale, replicas=replicas)
         plot_pressure_vs_V(sigmas, L_values, P)
         plot_b_vs_V(sigmas, L_values, b)
-
+    # Pressure vs K experiment
     elif choice == "3":
         P, b, E = pressure_vs_K(sigmas, L=L, N=N, simul_time=simul_time, K_values=K_values, replicas=replicas)
         b_reg = plot_pressure_vs_K(sigmas, E, P, N, L)

@@ -10,7 +10,7 @@ class Simul:
         self.L = L # box size
         self.K_scale = K_scale # velocity scale
 
-        self.position = self.generate_positions() 
+        self.position = self.generate_positions() # particle positions
         
         self.velocity = K_scale*np.random.normal(size=self.position.shape)  # random velocities
         self.l, self.m = np.triu_indices(self.position.shape[0], k=1)  # all pairs of indices between particles
@@ -48,9 +48,9 @@ class Simul:
         return np.array(selected_positions)
 
     def wall_time(self):
-        positive_time = (self.L-self.sigma-self.position)/self.velocity
-        neg_time = (self.sigma-self.position)/self.velocity
-        collision_time = np.where(self.velocity >= 0, positive_time, neg_time)
+        positive_time = (self.L-self.sigma-self.position)/self.velocity # time to hit the wall in positive direction
+        neg_time = (self.sigma-self.position)/self.velocity # time to hit the wall in negative direction
+        collision_time = np.where(self.velocity >= 0, positive_time, neg_time) # select positive or negative time based on velocity direction
 
         first_collision_time = np.min(collision_time)
 
@@ -68,7 +68,7 @@ class Simul:
         C = np.sum(delta_r * delta_r, axis=1) - (2 * self.sigma)**2
 
         Delta = B**2-4*A*C
-        valid = (Delta > 0) & (B < 0)
+        valid = (Delta > 0) & (B < 0) # only consider approaching particles with real solutions
 
         sqrt_Delta = np.zeros_like(Delta)
         sqrt_Delta[valid] = np.sqrt(Delta[valid])
@@ -93,7 +93,7 @@ class Simul:
         time_min = min(w_time, p_time)
          
         while current_time + time_min < self.simul_time:
-
+            # advance to next event
             if w_time < p_time:
                 self.position += w_time * self.velocity
                 self.velocity[particle, direction] = -self.velocity[particle, direction]
@@ -102,23 +102,24 @@ class Simul:
                 p_time, particle_1, particle_2 = self.pair_time()
                 time_min = min(w_time, p_time)
                 Delta_P += 2*np.abs(self.velocity[particle, direction])
-    
+        
             else:
                 self.position += p_time * self.velocity
                 dR = self.position[particle_1]-self.position[particle_2]
                 r = (self.position[particle_1]-self.position[particle_2])/np.sqrt(np.sum(dR*dR))
                 dV = self.velocity[particle_1] - self.velocity[particle_2]
+                # update velocities in the direction of r
                 self.velocity[particle_1] = self.velocity[particle_1] - r*(np.sum(r*dV))
                 self.velocity[particle_2] = self.velocity[particle_2] + r*(np.sum(r*dV))
                 current_time += p_time
                 p_time, particle_1, particle_2 = self.pair_time()
                 w_time, particle, direction = self.wall_time()
                 time_min = min(w_time, p_time)
-
+        # advance to the end of the time step
         self.position += (self.simul_time-current_time) * self.velocity
 
         assert math.isclose(ke_start,  (self.velocity**2).sum()/2.)  
-
+        # compute pressure from momentum change at walls
         pressure = Delta_P / (4*self.L*self.simul_time)
         return pressure, ke_start
 
