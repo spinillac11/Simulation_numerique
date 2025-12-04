@@ -3,7 +3,6 @@ import math
 import random
 
 class Simul:
-
     def __init__(self, simul_time, sigma, L, N, K_scale):
         self.sigma = sigma  # particle radius
         self.N = N  # number of particles 

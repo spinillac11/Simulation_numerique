@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from simul import Simul
 from scipy.stats import linregress
+import os
+
+os.makedirs("figures", exist_ok=True)
 
 def execute_simulation(sigma, L, N, K_scale, simul_time, replicas):
     pres = []
@@ -103,11 +106,12 @@ def plot_b_vs_N(sigmas, N_values, b_factor):
         plt.plot(1 / np.array(N_values)[valid], bvals[valid], "-o", label=f"sigma={sigma}")
 
     plt.xlabel("1/N")
-    plt.ylabel("b (excluded volume parameter)")
-    plt.title("b vs N for different σ (L = 10, K_scale = 1)")
+    plt.ylabel("b (paramètre de volume exclu)")
+    plt.title("b en fonction de N pour différents σ (L = 10, K_scale = 1)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
+    plt.savefig("figures/b_vs_N.png", dpi=300)
     plt.show()
 
 
@@ -120,11 +124,12 @@ def plot_b_vs_V(sigmas, L_values, b_factor):
         plt.plot(np.array(L_values)[valid]**2, bvals[valid], "-o", label=f"sigma={sigma}")
 
     plt.xlabel("V = L²")
-    plt.ylabel("b (excluded volume parameter)")
-    plt.title("b vs V for different σ (N = 40, K_scale = 1)")
+    plt.ylabel("b (paramètre de volume exclu)")
+    plt.title("b en fonction du volume pour différents σ (N = 40, K_scale = 1)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
+    plt.savefig("figures/b_vs_V.png", dpi=300)
     plt.show()
 
 def plot_b_vs_K(sigmas, K, b_factor, b_regression):
@@ -142,12 +147,13 @@ def plot_b_vs_K(sigmas, K, b_factor, b_regression):
             plt.hlines(b_reg, xmin=np.nanmin(K_data[valid]), xmax=np.nanmax(K_data[valid]), 
                        linestyles="--", label=f"sigma={sigma} regression b={b_reg:.3f}")
 
-    plt.xlabel("Kinnetic energy K")
-    plt.ylabel("b (excluded volume parameter)")
-    plt.title("b vs K for different σ (N = 40, L = 10)")
+    plt.xlabel("Énergie cinétique K")
+    plt.ylabel("b (paramètre de volume exclu)")
+    plt.title("b en fonction de K pour différents σ (N = 40, L = 10)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
+    plt.savefig("figures/b_vs_K.png", dpi=300)
     plt.show()
 
 
@@ -160,11 +166,12 @@ def plot_pressure_vs_V(sigmas, L_values, P_results):
         plt.plot(1 / (np.array(L_values)[valid]**2), data[valid], "-o", label=f"sigma={sigma}")
 
     plt.xlabel("1/V")
-    plt.ylabel("Pressure P")
-    plt.title("Pressure vs 1/V for different σ (N = 40, K_scale = 1)")
+    plt.ylabel("Pression P")
+    plt.title("Pression en fonction de 1/V pour différents σ (N = 40, K_scale = 1)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
+    plt.savefig("figures/pressure_vs_V.png", dpi=300)
     plt.show()
 
 
@@ -176,11 +183,13 @@ def plot_pressure_vs_N(sigmas, N_values, P_results):
         valid = ~np.isnan(data)
         plt.plot(np.array(N_values)[valid], data[valid], "-o", label=f"sigma={sigma}")
 
-    plt.xlabel("Number of particles N")
-    plt.ylabel("Pressure P")
-    plt.title("Pressure vs N for different σ (L = 10, K_scale = 1)")
+    plt.xlabel("Nombre de particules N")
+    plt.ylabel("Pression P")
+    plt.title("Pression en fonction de N pour différents σ (L = 10, K_scale = 1)")
     plt.grid(True)
     plt.legend()
+    plt.tight_layout()
+    plt.savefig("figures/pressure_vs_N.png", dpi=300)
     plt.show()
 
 
@@ -215,6 +224,8 @@ def plot_pressure_vs_K(sigmas, K, P_results, N, L):
     plt.title("Pressure vs K for different σ (N = 40, L = 10)")
     plt.grid(True)
     plt.legend()
+    plt.tight_layout()
+    plt.savefig("figures/pressure_vs_K.png", dpi=300)
     plt.show()
 
     return b_regression
@@ -223,7 +234,7 @@ def plot_pressure_vs_K(sigmas, K, P_results, N, L):
 
 def main():
 
-    simul_time = 10.0
+    simul_time = 10
     replicas = 10
 
     # Fixed parameters
@@ -232,12 +243,12 @@ def main():
     K_scale = 1.0
 
     # Define parameter ranges for experiments
-    sigmas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    sigmas = [0.005, 0.008, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     N_values = list(range(10, 160, 10))
     L_values = [4, 5, 6, 8, 10, 12, 15]
     K_values = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
 
-    print("\nSelect the plot you want to generate:")
+    print("\n Selecto parameter to vary:")
     print("1) N particles experiment")
     print("2) Box volume experiment")
     print("3) Kinetic energy experiment")
